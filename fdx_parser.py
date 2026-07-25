@@ -1,4 +1,4 @@
-"""open-fdx-parser: Zero-dependency Final Draft (.fdx) XML parser.
+"""open-fdx-toolkit: Zero-dependency Final Draft (.fdx) XML parser.
 
 Extracts structured screenplay data from Final Draft 8+ XML files into
 clean Python dataclasses — scenes, characters, dialogue, actions, page
@@ -23,7 +23,16 @@ from pathlib import Path
 from typing import Any
 
 __version__ = "0.1.0"
-__all__ = ["ParsedScene", "parse_file", "parse_fdx"]
+__all__ = ["ParsedScene", "ParsedParagraph", "parse_file", "parse_fdx"]
+
+
+@dataclass
+class ParsedParagraph:
+    """A single paragraph within a scene, with type and optional text style."""
+
+    type: str  # "Action", "Character", "Dialogue", "Parenthetical", etc.
+    text: str
+    styles: list[str] = field(default_factory=list)  # ["Bold", "Italic"], etc.
 
 
 @dataclass
@@ -39,6 +48,7 @@ class ParsedScene:
     time_of_day: str = ""
     body_lines: list[str] = field(default_factory=list)
     characters: list[str] = field(default_factory=list)
+    paragraphs: list[ParsedParagraph] = field(default_factory=list)
     page_eighths: int = 1
     narrative_position_hint: str | None = None
     has_dual_dialogue: bool = False
@@ -55,6 +65,10 @@ class ParsedScene:
             "time_of_day": self.time_of_day,
             "body_lines": self.body_lines,
             "characters": self.characters,
+            "paragraphs": [
+                {"type": p.type, "text": p.text, "styles": p.styles}
+                for p in self.paragraphs
+            ],
             "page_eighths": self.page_eighths,
             "narrative_position_hint": self.narrative_position_hint,
             "has_dual_dialogue": self.has_dual_dialogue,
@@ -123,9 +137,30 @@ def _parse_slugline(slug: str) -> dict[str, str]:
     }
 
 
-def _get_text(el: ET.Element) -> str:
-    """Join all <Text> children into a single string."""
-    return "".join(t.text or "" for t in el.findall("Text"))
+def _get_text_and_styles(el: ET.Element) -> tuple[str, list[list[str]]]:
+    """Extract joined text and per-element style lists from <Text> children."""
+    text_parts: list[str] = []
+    style_parts: list[list[str]] = []
+    for t in el.findall("Text"):
+        text_parts.append(t.text or "")
+        style_str = (t.get("Style") or "").strip()
+        if style_str and style_str not in ("0",):
+            style_parts.append([s.strip() for s in style_str.split("+") if s.strip()])
+        else:
+            style_parts.append([])
+    return "".join(text_parts), style_parts
+
+
+def _flatten_styles(style_lists: list[list[str]]) -> list[str]:
+    """Flatten and deduplicate style lists from multiple <Text> elements."""
+    seen: set[str] = set()
+    result: list[str] = []
+    for styles in style_lists:
+        for s in styles:
+            if s not in seen:
+                seen.add(s)
+                result.append(s)
+    return result
 
 
 def _estimate_page_eighths(length_str: str) -> int:
@@ -177,6 +212,7 @@ def parse_fdx(text: str) -> list[ParsedScene]:
     current_slugline: str | None = None
     current_body: list[str] = []
     current_chars: list[str] = []
+    current_paragraphs: list[ParsedParagraph] = []
     current_page_eighths: int = 1
     current_narrative: str | None = None
     current_scene_num: str = ""
@@ -185,9 +221,14 @@ def parse_fdx(text: str) -> list[ParsedScene]:
 
     for para in paragraphs:
         ptype = para.get("Type", "")
-        text = _get_text(para).strip()
+        text, style_lists = _get_text_and_styles(para)
+        text = text.strip()
+        styles = _flatten_styles(style_lists)
         if not text and ptype != "Scene Heading":
             continue
+
+        # Track as structured paragraph
+        pp = ParsedParagraph(type=ptype, text=text, styles=styles)
 
         if ptype == "Scene Heading":
             # Save previous scene
@@ -204,6 +245,7 @@ def parse_fdx(text: str) -> list[ParsedScene]:
                     time_of_day=parsed["time_of_day"],
                     body_lines=current_body.copy(),
                     characters=list(set(current_chars)),
+                    paragraphs=current_paragraphs.copy(),
                     page_eighths=current_page_eighths,
                     has_dual_dialogue=has_dual,
                     narrative_position_hint=current_narrative,
@@ -214,6 +256,7 @@ def parse_fdx(text: str) -> list[ParsedScene]:
             current_narrative = _detect_narrative(text)
             current_body = []
             current_chars = []
+            current_paragraphs = []
             has_dual = False
             sp = para.find("SceneProperties")
             current_scene_num = sp.get("Number", "") if sp is not None else ""
@@ -226,12 +269,19 @@ def parse_fdx(text: str) -> list[ParsedScene]:
         elif ptype == "Character":
             current_chars.append(text)
             current_body.append(text)
+            current_paragraphs.append(pp)
 
         elif ptype == "Dialogue":
             current_body.append(text)
+            current_paragraphs.append(pp)
+
+        elif ptype == "Parenthetical":
+            current_body.append(f"({text})" if not text.startswith("(") else text)
+            current_paragraphs.append(pp)
 
         elif ptype in ("Action", "General", "Transition", "Shot"):
             current_body.append(text)
+            current_paragraphs.append(pp)
 
     # Save final scene
     if current_slugline is not None:
@@ -247,6 +297,7 @@ def parse_fdx(text: str) -> list[ParsedScene]:
             time_of_day=parsed["time_of_day"],
             body_lines=current_body.copy(),
             characters=list(set(current_chars)),
+            paragraphs=current_paragraphs.copy(),
             page_eighths=current_page_eighths,
             has_dual_dialogue=has_dual,
             narrative_position_hint=current_narrative,
