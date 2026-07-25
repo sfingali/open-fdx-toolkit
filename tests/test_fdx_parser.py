@@ -191,4 +191,4 @@ class TestFixtureFiles:
                     scenes = parse_fdx(f.read())
                 assert len(scenes) > 0, f"{fname} produced no scenes"
                 count += 1
-        assert count == 3, f"Expected 3 fixtures, got {count}"
+        assert count == 4, f"Expected 4 fixtures, got {count}"
