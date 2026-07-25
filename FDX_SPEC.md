@@ -60,6 +60,26 @@ absent from all available test files but confirmed in parser source code.
 **Data**: Application variations inferred from rsdoiel/fdx source code and Go
 struct field optionality (`omitempty` tags).
 
+### 0.2 Final Draft vs Fade In: Output Size Comparison
+
+The same 208-scene script (REARVIEW) exported from both applications shows
+dramatically different output verbosity:
+
+| Metric | Final Draft 11/12 | Fade In | Factor |
+|--------|-------------------|---------|--------|
+| File size | 853 KB | 520 KB | 1.6× |
+| `<Text>` attributes per element | 7 (all) | 2 (RevisionID, Style) | 3.5× |
+| Preamble elements | ~25 | ~15 | 1.7× |
+| `<Paragraph>` attributes | 8 (all layout) | 2 (Type, Number) | 4× |
+
+Final Draft writes every possible attribute on every element regardless of
+whether it differs from the default. Fade In writes only the attributes that
+have meaningful values. Both produce valid, semantically equivalent FDX.
+
+**Implication**: Parsers should handle the full attribute set but generators
+targeting Fade In as the import target can safely omit default-valued attributes
+to produce smaller, cleaner output.
+
 ---
 
 ## 1. Document Structure
