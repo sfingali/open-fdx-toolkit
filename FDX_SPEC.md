@@ -6,9 +6,9 @@ been directly observed in production files by this project's authors.
 
 **Sources**:
 - Production FDX file (278 scenes, THE-WAIF, Final Draft 11/12)
-- `rsdoiel/fdx` Go package test data (GitHub)
+- `rsdoiel/fdx` Go package — 6 verified test FDX files + complete Go data model (GitHub)
 - `stultus/scriptty` FDX import analysis (GitHub #190)
-- `Guernsey-Creative/screenplay-js` FDX parser (GitHub)
+- `Guernsey-Creative/screenplay-js` FDX parser source (GitHub)
 - XPath queries gist by surrealroad (GitHub gist)
 - StackOverflow XSL transform for FDX → HTML
 - `jzucker2/schoonmaker` Python FDX tool (GitHub)
@@ -17,6 +17,48 @@ been directly observed in production files by this project's authors.
 > format. All knowledge here is reverse-engineered from files produced by Final Draft
 > 8+, Fade In, Trelby, Amazon Storywriter, and Celtx. Different applications may
 > produce subtly different FDX output.
+
+## 0. Version Dependence
+
+FDX features vary across Final Draft versions and export settings. Features
+marked **[PROVISIONAL]** or **[UNCONFIRMED]** may exist only in specific versions
+or configurations.
+
+| Feature | FD 8 | FD 9 | FD 10 | FD 11 | FD 12 | Fade In | Amazon Storywriter |
+|---------|------|------|-------|-------|-------|---------|-------------------|
+| Core paragraph types | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `SceneProperties` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `DualDialogue` wrapper | ? | ? | ✓ | ✓ | ✓ | ✓ | ? |
+| `Summary` (synopses) | ? | ? | ✓ | ✓ | ✓ | ? | ? |
+| `ScriptNote` | ? | ✓ | ✓ | ✓ | ✓ | ? | ? |
+| `TagData` / `TagCategory` | — | — | — | ✓ | ✓ | — | — |
+| `RevisionID` on `Text` | ? | ✓ | ✓ | ✓ | ✓ | — | — |
+| `StartsNewPage` on `Paragraph` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `Alignment` on `Paragraph` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `NumberScheme="1A"` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `Beat` / `StoryMap` elements | — | — | ✓ | ✓ | ✓ | — | — |
+| `Cast` / `Actors` | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| `LockedPages` | — | — | — | ✓ | ✓ | — | — |
+| `SmartType` / `MoresAndContinueds` | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| `SplitState` (editor UI) | ? | ✓ | ✓ | ✓ | ✓ | — | — |
+
+**Legend**: ✓ = verified in test files, — = absent in test files, ? = unknown / not yet verified.
+
+Key: Production tagging (`TagData`, `TagCategory`) and locked pages appear to be
+Final Draft 11+ features. The `<DualDialogue>` wrapper for simultaneous dialogue is
+absent from all available test files but confirmed in parser source code.
+
+## 0.1 Application-Specific Variations
+
+| Application | Notable differences from Final Draft |
+|-------------|--------------------------------------|
+| **Fade In** | Cleaner XML, fewer preamble elements, may omit `Revisions` and `SplitState` |
+| **Amazon Storywriter** | Similar to Fade In, may omit `Cast`/`Actors` |
+| **Trelby** | Minimal preamble, may omit `TitlePage` entirely |
+| **Celtx** | May produce non-standard paragraph types, omits most preamble |
+
+**Data**: Application variations inferred from rsdoiel/fdx source code and Go
+struct field optionality (`omitempty` tags).
 
 ---
 
@@ -63,7 +105,7 @@ and vary by application.
 |---------|---------|----------|
 | `<TitlePage>` | Title page content (free-form Paragraphs) | ✓ THE-WAIF |
 | `<HeaderAndFooter>` | Page header/footer configuration | ✓ THE-WAIF |
-| `<Revisions>` | Revision color/scheme definitions | ✓ THE-WAIF |
+| `<Revisions>` | Revision color/scheme definitions (revision-mode support) | ✓ THE-WAIF |
 | `<SceneNumberOptions>` | Numbering scheme (e.g., `NumberScheme="1A"`) | ✓ THE-WAIF, rsdoiel |
 | `<LockedPages>` | Production-locked page markers | ✓ THE-WAIF |
 | `<Cast>` | Cast member definitions with actor mapping | ✓ rsdoiel |
@@ -73,6 +115,14 @@ and vary by application.
 | `<CharacterHighlighting>` | Per-character color highlighting | ✓ rsdoiel |
 | `<TagCategories>` | Production tag category definitions | ✓ THE-WAIF (22 categories) |
 | `<DisplayBoards>` | Beat board / story map state | ✓ rsdoiel, schoonmaker |
+| `<ElementSettings>` | Per-element formatting overrides | ✓ rsdoiel struct |
+| `<PageLayout>` | Page layout configuration | ✓ rsdoiel struct |
+| `<WindowState>` | Editor window state (purely UI) | ✓ rsdoiel struct |
+| `<TextState>` | Text editing state | ✓ rsdoiel struct |
+| `<ScriptNoteDefinitions>` | Script note category definitions | ✓ rsdoiel struct |
+| `<SmartType>` | SmartType configuration | ✓ rsdoiel struct |
+| `<MoresAndContinueds>` | MORE/CONT'D configuration | ✓ rsdoiel struct |
+| `<SpellCheckIgnoreLists>` | Spelling ignore lists | ✓ rsdoiel struct |
 
 **Parser guidance**: Preamble elements are non-critical for basic script parsing.
 Production tagging (`TagCategories`, `TagData`) is relevant for breakdown tools.
@@ -97,11 +147,40 @@ how the text should be rendered and what structural role it plays.
 | `Transition` | "CUT TO:", "FADE OUT." | ✓ | 22 |
 | `Shot` | "CLOSE ON", "ANGLE ON" | ✓ | 1 |
 | `General` | Title page, notes, free text | ✓ | 55 |
+| `Beat` | Beat board element **[VERIFIED]** | ✗ | ✓ in rsdoiel |
+| `Cast List` | Cast list **[VERIFIED]** | ✗ | ✓ in rsdoiel |
+| `Center` | Centered text **[VERIFIED]** | ✗ | ✓ in rsdoiel |
+| `Last Revised` | Last revision marker **[VERIFIED]** | ✗ | ✓ in rsdoiel |
+| `Page #` | Page number in title page **[VERIFIED]** | ✓ | 2 |
+| `Right` | Right-aligned text **[VERIFIED]** | ✗ | ✓ in rsdoiel |
+| `Script` | Script-level metadata **[VERIFIED]** | ✓ | 1 |
+| `StoryMap` | Story map element **[VERIFIED]** | ✗ | ✓ in rsdoiel |
 | `Lyrics` | Song lyrics **[UNCONFIRMED]** | ✗ | 0 |
 | `Outline N` | Outline/beat elements **[UNCONFIRMED]** | ✗ | 0 |
-| `Page #` | Page number in title page | ✓ | 2 |
-| `Normal Text` | Free text in title page | ✓ | 2 |
-| `Script` | Script-level metadata **[UNCONFIRMED]** | ✓ | 1 |
+| `Normal Text` | Free text in title page **[VERIFIED]** | ✓ | 2 |
+
+**Note**: `Beat`, `Cast List`, `Center`, `Last Revised`, `Right`, and `StoryMap` are
+title-page and preamble paragraph types. They appear in rsdoiel's 6 test files but
+not in THE-WAIF's FDX export. They are typically generated by Final Draft's title
+page editor, beat board, and story map features.
+
+### 2.2 Paragraph Attributes
+
+Paragraphs can have attributes beyond `Type`. These are verified against rsdoiel's
+6 sample FDX files and the Go struct definitions.
+
+| Attribute | Example | Observed | Description |
+|-----------|---------|----------|-------------|
+| `Type` | `"Action"` | ✓ | Paragraph type (required) |
+| `Number` | `"1"`, `"12A"` | ✓ | Scene number (Scene Headings only) |
+| `Alignment` | `"Center"`, `"Right"` | ✓ | Text alignment (14 in sample-01.fdx) |
+| `StartsNewPage` | `"Yes"` | ✓ | Page break before this paragraph (14 in sample-01.fdx) |
+| `FirstIndent` | ? | ✓ in struct | First-line indent **[UNCONFIRMED]** |
+| `Leading` | ? | ✓ in struct | Line spacing **[UNCONFIRMED]** |
+| `LeftIndent` | ? | ✓ in struct | Left margin **[UNCONFIRMED]** |
+| `RightIndent` | ? | ✓ in struct | Right margin **[UNCONFIRMED]** |
+| `SpaceBefore` | ? | ✓ in struct | Space before paragraph **[UNCONFIRMED]** |
+| `Spacing` | ? | ✓ in struct | Paragraph spacing **[UNCONFIRMED]** |
 
 **Source**: Paragraph types verified against THE-WAIF FDX (278 scenes, 2,948 paragraphs).
 `Lyrics` and `Outline N` mentioned in rsdoiel and scriptty docs but not observed in
@@ -149,6 +228,21 @@ The `Style` attribute on `<Text>` elements uses a `+`-delimited list of style na
 - `"0"` or `""` — observed in THE-WAIF on some elements, may indicate "no style" or be a Final Draft rendering artifact **[PROVISIONAL]**
 
 **Parse rule**: Split on `+`, treat each token as a boolean style flag.
+
+### 2.4 Additional Text Attributes
+
+From rsdoiel/fdx Go struct definitions (`Text` struct). These attributes appear
+on `<Text>` elements in addition to `Style`.
+
+| Attribute | Example | Observed | Purpose |
+|-----------|---------|----------|---------|
+| `Style` | `"Bold+Underline"` | ✓ | Text style flags |
+| `RevisionID` | `"1"`, `"2"` | ✓ (17 in sample-01.fdx) | Revision layer this text belongs to |
+| `Font` | `"Courier Final Draft"` | ✓ in struct | Font name |
+| `Size` | `"12"` | ✓ in struct | Font size |
+| `Color` | `"#000000000000"` | ✓ in struct | Text color (hex) |
+| `Background` | `"#FFFFFFFFFFFF"` | ✓ in struct | Background color (hex) |
+| `AdornmentStyle` | `"0"` | ✓ in struct | Adornment style ID |
 
 ---
 
@@ -414,23 +508,29 @@ Based on observed behavior across 278 production scenes and community documentat
 ## 10. Known Gaps
 
 These features are documented in community sources but **not yet verified** against
-production FDX files by this project:
+production FDX files by this project.
 
-| Feature | Status | Priority |
-|---------|--------|----------|
-| Dual dialogue (`<DualDialogue>` wrapper) | PROVISIONAL — from screenplay-js, scriptty | MEDIUM |
-| Scene synopses (`Summary/Paragraph/Text`) | UNCONFIRMED — from XPath gist, screenplay-js | LOW |
-| Script notes (`<ScriptNote>`) | UNCONFIRMED — from XPath gist | LOW |
-| Multi-page scene length (beyond `8/8`) | PROVISIONAL — inferred, needs multi-page test file | LOW |
-| Revision marks (`Change`, `Range`, `RevisionID`) | UNCONFIRMED — mentioned in scriptty docs | LOW |
-| Letter-variant scene numbers (`"12A"`, `"A12"`) | PROVISIONAL — scheme exists, no examples in THE-WAIF | LOW |
-| `Lyrics` paragraph type | UNCONFIRMED — from rsdoiel | LOW |
-| `Outline N` paragraph types | UNCONFIRMED — from rsdoiel | LOW |
-| TagData structure and semantics | PROVISIONAL — 2 elements in THE-WAIF, need analysis | MEDIUM |
-| HeaderAndFooter structure | UNCONFIRMED — exists in THE-WAIF, not parsed | LOW |
+| Feature | Status | Priority | Source |
+|---------|--------|----------|--------|
+| Dual dialogue (`<DualDialogue>` wrapper) | PROVISIONAL | MEDIUM | screenplay-js, scriptty |
+| Scene synopses (`Summary/Paragraph/Text`) | UNCONFIRMED | LOW | XPath gist, screenplay-js |
+| Multi-page scene length (beyond `8/8`) | PROVISIONAL | LOW | Inferred |
+| `Lyrics` paragraph type | UNCONFIRMED | LOW | rsdoiel struct |
+| `Outline N` paragraph types | UNCONFIRMED | LOW | rsdoiel struct |
+| TagData structure and semantics | PROVISIONAL | MEDIUM | 2 elements in THE-WAIF |
+| `FirstIndent` / `Leading` / `LeftIndent` values | UNCONFIRMED | LOW | rsdoiel struct only |
+| `ScriptNote` nested structure | UNCONFIRMED | LOW | XPath gist |
+| `SmartType` configuration format | UNCONFIRMED | LOW | rsdoiel struct only |
+| `SplitState` / `WindowState` schema | UNCONFIRMED | LOW | rsdoiel struct (UI metadata) |
 
-**To verify**: Find an FDX file with dual dialogue, scene synopses, script notes,
-and multi-page scenes. Submit as a PR to this repo.
+**Newly verified** (removed from gaps in this revision): `StartsNewPage`, `Alignment`,
+`RevisionID`, `NumberScheme="1A"`, title-page paragraph types (`Beat`, `Cast List`,
+`Center`, `Last Revised`, `Right`, `StoryMap`), preamble elements (`ElementSettings`,
+`PageLayout`, `TextState`, `ScriptNoteDefinitions`, `SmartType`, `MoresAndContinueds`,
+`SpellCheckIgnoreLists`, `WindowState`).
+
+**To verify remaining gaps**: Find or produce FDX files with dual dialogue, scene
+synopses, lyrics, and script notes. Submit test fixtures as a PR.
 
 ---
 

@@ -147,3 +147,50 @@ class TestParseFdx:
         assert d["scene_number"] == "42"
         assert d["location"] == "BAR"
         assert d["time_of_day"] == "NIGHT"
+
+class TestFixtureFiles:
+    def test_parse_sample_01(self):
+        from fdx_parser import parse_fdx
+        import os
+        path = os.path.join(os.path.dirname(__file__), "fixtures", "sample-01.fdx")
+        with open(path) as f:
+            scenes = parse_fdx(f.read())
+        assert len(scenes) > 0
+        # Verify core paragraph types
+        all_types = set()
+        for s in scenes:
+            for p in s.paragraphs:
+                all_types.add(p.type)
+        assert "Scene Heading" in all_types
+        assert "Character" in all_types
+        assert "Dialogue" in all_types
+        assert "Action" in all_types
+
+    def test_parse_sample_02(self):
+        from fdx_parser import parse_fdx
+        import os
+        path = os.path.join(os.path.dirname(__file__), "fixtures", "sample-02.fdx")
+        with open(path) as f:
+            scenes = parse_fdx(f.read())
+        assert len(scenes) > 0
+
+    def test_parse_sample_03(self):
+        from fdx_parser import parse_fdx
+        import os
+        path = os.path.join(os.path.dirname(__file__), "fixtures", "sample-03.fdx")
+        with open(path) as f:
+            scenes = parse_fdx(f.read())
+        assert len(scenes) > 0
+
+    def test_all_samples_parse_without_error(self):
+        from fdx_parser import parse_fdx
+        import os
+        fixtures_dir = os.path.join(os.path.dirname(__file__), "fixtures")
+        count = 0
+        for fname in sorted(os.listdir(fixtures_dir)):
+            if fname.endswith('.fdx'):
+                with open(os.path.join(fixtures_dir, fname)) as f:
+                    scenes = parse_fdx(f.read())
+                assert len(scenes) > 0, f"{fname} produced no scenes"
+                count += 1
+        assert count == 3, f"Expected 3 fixtures, got {count}"
