@@ -293,18 +293,34 @@ beyond `Name`) is the observed form in rsdoiel's test data.
 
 ### 3.3 Scene Synopsis
 
-Scene synopses are stored as children of `SceneProperties`, nested inside a
-`Summary` element **[UNCONFIRMED — not observed in THE-WAIF, sourced from XPath gist and screenplay-js parser]**:
+**[VERIFIED — REARVIEW.fdx, Final Draft 11/12 export]**. Scene synopses are stored
+as `<Summary>` children of `<SceneProperties>`:
 
 ```xml
-<SceneProperties Length="2/8" Page="1" Number="1">
+<SceneProperties Length="2/8" Page="1" Title="">
   <Summary>
-    <Paragraph>
-      <Text>Ben wakes up and checks the house.</Text>
+    <Paragraph Alignment="Left" FirstIndent="0.00" Leading="Regular"
+               LeftIndent="0.00" RightIndent="1.39" SpaceBefore="0"
+               Spacing="1" StartsNewPage="No">
+      <Text AdornmentStyle="0" Background="#FFFFFFFFFFFF" Color="#000000000000"
+            Font="Courier Final Draft" RevisionID="0" Size="12" Style="">
+        The racecar catches fire.
+      </Text>
     </Paragraph>
   </Summary>
+  <SceneArcBeats/>
 </SceneProperties>
 ```
+
+**Structure**: The `<Summary>` contains a full `<Paragraph>` with all standard
+paragraph attributes and `<Text>` children. The synopsis text follows the same
+`<Text>` + attribute pattern as regular paragraphs. Despite the XPath gist
+showing `Summary/Paragraph/Text` as the path, the actual structure is
+`Summary → Paragraph → Text`. **[CONFIRMED]**
+
+**Note**: Summary paragraphs carry the full attribute set (Alignment, indents,
+spacing) even though synopses are plain text. These attributes may be ignored
+during import.
 
 ### 3.4 Scene Number Schemes
 
@@ -414,21 +430,46 @@ produces FDX that Final Draft 11+ can import.
 
 ## 5. Script Notes
 
-Script notes are stored as `<ScriptNote>` children within paragraphs
-**[PROVISIONAL — not observed in THE-WAIF, sourced from XPath gist]**:
+**[VERIFIED — REARVIEW.fdx, Final Draft 11/12 export, 3 ScriptNotes]**.
+
+Script notes are stored as `<ScriptNote>` children within any paragraph type.
+They can appear inside `General`, `Scene Heading`, or any other paragraph:
 
 ```xml
-<Paragraph Type="Scene Heading">
-  <SceneProperties Length="1/8" Page="1"/>
-  <Text>INT. KITCHEN - DAY</Text>
-  <ScriptNote>
-    <Paragraph><Text>Check with director about this setting.</Text></Paragraph>
+<Paragraph Type="General">
+  <ScriptNote Author="" Color="#000000000000"
+              DateModified="20260725T174904" DateTime="20260725T174846"
+              Name="note for AI" Type="">
+    <Paragraph Alignment="Left" FirstIndent="0.00" Leading="Regular"
+               LeftIndent="0.00" RightIndent="1.39" SpaceBefore="0"
+               Spacing="1" StartsNewPage="No">
+      <Text AdornmentStyle="0" Background="#FFFFFFFFFFFF"
+            Color="#000000000000" Font="Courier Final Draft"
+            RevisionID="0" Size="12" Style="">
+        This is where I made something dual-dialogue.
+      </Text>
+    </Paragraph>
   </ScriptNote>
+  <DualDialogue>
+    ...dual dialogue content...
+  </DualDialogue>
 </Paragraph>
 ```
 
-THE-WAIF's FDX contains no ScriptNote elements. Other tools (screenplay-js,
-schoonmaker) document this structure but handling varies.
+**ScriptNote attributes**:
+
+| Attribute | Example | Description |
+|-----------|---------|-------------|
+| `Author` | `""`, name | Script note author |
+| `Color` | `"#000000000000"` | Note color |
+| `DateModified` | `"20260725T174904"` | Last modified (ISO compact) |
+| `DateTime` | `"20260725T174846"` | Created timestamp (ISO compact) |
+| `Name` | `"note for AI"` | Note name/title |
+| `Type` | `""` | Note type (empty in observed files) |
+
+The script note body is a full `<Paragraph>` with standard attributes and
+`<Text>` children. A single paragraph can contain both a `<ScriptNote>` AND
+other content (like `<DualDialogue>`), showing they coexist independently.
 
 ---
 
@@ -568,21 +609,21 @@ production FDX files by this project.
 
 | Feature | Status | Priority | Source |
 |---------|--------|----------|--------|
-| Scene synopses (`Summary/Paragraph/Text`) | UNCONFIRMED | LOW | XPath gist, screenplay-js |
 | Multi-page scene length (beyond `8/8`) | PROVISIONAL | LOW | Inferred |
 | `Lyrics` paragraph type | UNCONFIRMED | LOW | rsdoiel struct |
 | `Outline N` paragraph types | UNCONFIRMED | LOW | rsdoiel struct |
 | Scene-level TagData assignments | PROVISIONAL | MEDIUM | TagData in preamble only |
 | `FirstIndent` / `Leading` / `LeftIndent` values | UNCONFIRMED | LOW | rsdoiel struct only |
-| `ScriptNote` nested structure | UNCONFIRMED | LOW | XPath gist |
 | `SmartType` configuration format | UNCONFIRMED | LOW | rsdoiel struct only |
 | `SplitState` / `WindowState` schema | UNCONFIRMED | LOW | rsdoiel struct (UI metadata) |
 
 **Newly verified** (removed from gaps in this revision): DualDialogue wrapper
 structure, TagCategory UUID-based attributes, `Fade In` as FDX source application,
-`RevisionID` on all Text elements (4,493 instances confirmed), 207-scene Fade In
+`RevisionID` on all Text elements (4,493+ instances confirmed), 207-scene Fade In
 export as test fixture. DualDialogue confirmed to use `<DualDialogue>` inside
 `<Paragraph Type="Character">` — not the `^` suffix (Fountain convention).
+Scene synopses (`Summary`) and Script notes (`ScriptNote` with full attribute set)
+verified from Final Draft export of REARVIEW.
 
 **To verify remaining gaps**: Find or produce FDX files with dual dialogue, scene
 synopses, lyrics, and script notes. Submit test fixtures as a PR.
