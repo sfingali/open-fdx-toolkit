@@ -123,6 +123,13 @@ and vary by application.
 | `<SmartType>` | SmartType configuration | ✓ rsdoiel struct |
 | `<MoresAndContinueds>` | MORE/CONT'D configuration | ✓ rsdoiel struct |
 | `<SpellCheckIgnoreLists>` | Spelling ignore lists | ✓ rsdoiel struct |
+| `<UnanchoredScriptNotes>` | Unanchored script notes container | ✓ rsdoiel sample-01 |
+| `<Characters>` | Character name autocomplete list | ✓ rsdoiel sample-01 |
+| `<SceneIntros>` | Scene intro autocomplete (INT./EXT./etc) | ✓ rsdoiel sample-01 |
+| `<Locations>` | Location autocomplete list | ✓ rsdoiel sample-01 |
+| `<TimesOfDay>` | Time-of-day autocomplete list | ✓ rsdoiel sample-01 |
+| `<Transitions>` | Transition autocomplete list | ✓ rsdoiel sample-01 |
+| `<Extensions>` | Character extension list (V.O., O.S., etc.) | ✓ rsdoiel sample-01 |
 
 **Parser guidance**: Preamble elements are non-critical for basic script parsing.
 Production tagging (`TagCategories`, `TagData`) is relevant for breakdown tools.
@@ -265,6 +272,24 @@ on `<Text>` elements in addition to `Style`.
 | `Page` | string | ✓ | Starting page number as string |
 | `Title` | string | ✓ | Scene title (rarely used — empty in THE-WAIF) |
 | `Number` | string | ✓ | Scene number. Empty = auto-numbered |
+
+### 3.3 Scene Arc Beats
+
+**[VERIFIED — rsdoiel sample-01.fdx]**. `SceneProperties` can contain `<SceneArcBeats>` with
+per-character arc beat tracking:
+
+```xml
+<SceneProperties Length="2/8" Page="1">
+  <SceneArcBeats>
+    <CharacterArcBeat Name="PROGRAMMER"></CharacterArcBeat>
+  </SceneArcBeats>
+</SceneProperties>
+```
+
+This appears to be a Final Draft beat board feature that links character arcs to
+specific scenes. The beat data itself may be stored in `<DisplayBoards>` elements
+in the preamble. The empty `CharacterArcBeat` element (no children, no attributes
+beyond `Name`) is the observed form in rsdoiel's test data.
 
 ### 3.3 Scene Synopsis
 
@@ -527,7 +552,9 @@ production FDX files by this project.
 `RevisionID`, `NumberScheme="1A"`, title-page paragraph types (`Beat`, `Cast List`,
 `Center`, `Last Revised`, `Right`, `StoryMap`), preamble elements (`ElementSettings`,
 `PageLayout`, `TextState`, `ScriptNoteDefinitions`, `SmartType`, `MoresAndContinueds`,
-`SpellCheckIgnoreLists`, `WindowState`).
+`SpellCheckIgnoreLists`, `WindowState`, `UnanchoredScriptNotes`), `SceneArcBeats` +
+`CharacterArcBeat`, autocomplete lists (`Characters`, `SceneIntros`, `Locations`,
+`TimesOfDay`, `Transitions`, `Extensions`), `DynamicLabel` element.
 
 **To verify remaining gaps**: Find or produce FDX files with dual dialogue, scene
 synopses, lyrics, and script notes. Submit test fixtures as a PR.
