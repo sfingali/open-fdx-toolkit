@@ -1,4 +1,4 @@
-# Open FDX Parser
+# Open FDX Toolkit
 
 Zero-dependency Python parser for Final Draft (`.fdx`) screenplay files.
 
@@ -9,14 +9,14 @@ No external dependencies beyond the Python standard library.
 ## Installation
 
 ```bash
-pip install open-fdx-parser
+pip install open-fdx-toolkit
 ```
 
 Or from source:
 
 ```bash
-git clone https://github.com/sfingali/open-fdx-parser.git
-cd open-fdx-parser
+git clone https://github.com/sfingali/open-fdx-toolkit.git
+cd open-fdx-toolkit
 pip install -e .
 ```
 
