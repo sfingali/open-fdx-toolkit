@@ -654,6 +654,7 @@ synopses, lyrics, and script notes. Submit test fixtures as a PR.
 
 - [Final Draft](https://www.finaldraft.com/)
 - [Fountain](https://fountain.io/) — plain-text screenplay format
+- [open-moviemagic-toolkit](https://github.com/sfingali/open-moviemagic-toolkit) — MMS schedule format toolkit. Companion project for the full pre-production pipeline.
 - [rsdoiel/fdx](https://github.com/rsdoiel/fdx) — Go FDX package
 - [Guernsey-Creative/screenplay-js](https://github.com/Guernsey-Creative/screenplay-js) — JS FDX parser
 - [jzucker2/schoonmaker](https://github.com/jzucker2/schoonmaker) — Python FDX diff tool
