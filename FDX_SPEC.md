@@ -31,7 +31,7 @@ or configurations.
 | `DualDialogue` wrapper | ? | ? | ✓ | ✓ | ✓ | ✓ | ? |
 | `Summary` (synopses) | ? | ? | ✓ | ✓ | ✓ | ? | ? |
 | `ScriptNote` | ? | ✓ | ✓ | ✓ | ✓ | ? | ? |
-| `TagData` / `TagCategory` | — | — | — | ✓ | ✓ | — | — |
+| `TagData` / `TagCategory` | — | — | ✓ | ✓ | ✓ | ✓ | — |
 | `RevisionID` on `Text` | ? | ✓ | ✓ | ✓ | ✓ | — | — |
 | `StartsNewPage` on `Paragraph` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `Alignment` on `Paragraph` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -373,27 +373,42 @@ Multiple parentheticals per dialogue block are possible.
 ### 4.2 Dual Dialogue
 
 Dual dialogue (two characters speaking simultaneously) uses a `<DualDialogue>`
-wrapper element **[PROVISIONAL — not observed in THE-WAIF, sourced from screenplay-js and scriptty docs]**:
+wrapper element inside a `<Paragraph Type="Character">`.
+
+**[VERIFIED — REARVIEW.fdx, Fade In export, 1 dual dialogue exchange]**:
 
 ```xml
 <Paragraph Type="Character">
-  <Text>BEN</Text>
   <DualDialogue>
-    <Paragraph Type="Character"><Text>BEN</Text></Paragraph>
-    <Paragraph Type="Dialogue"><Text>Hello.</Text></Paragraph>
-    <Paragraph Type="Character"><Text>MARIE</Text></Paragraph>
-    <Paragraph Type="Dialogue"><Text>What is it?</Text></Paragraph>
+    <Paragraph Type="Character">
+      <Text>RAY</Text>
+    </Paragraph>
+    <Paragraph Type="Dialogue">
+      <Text>I said no... don't give me this bullshit.</Text>
+    </Paragraph>
+    <Paragraph Type="Character">
+      <Text>LORY</Text>
+    </Paragraph>
+    <Paragraph Type="Dialogue">
+      <Text>-you said weed stayed in the system for weeks...</Text>
+    </Paragraph>
   </DualDialogue>
 </Paragraph>
 ```
 
-**Important**: Earlier revisions of this document incorrectly stated dual dialogue
-uses a `^` suffix. That is a **Fountain convention**, not an FDX convention.
-The FDX format uses the `<DualDialogue>` wrapper element.
+**Structure**:
+1. Outer `<Paragraph Type="Character">` — the first character's cue (container)
+2. `<DualDialogue>` wrapper
+3. Character A → Dialogue A → Character B → Dialogue B in sequence
+4. All inner paragraphs follow the same `<Text>` + attributes pattern
 
-THE-WAIF contains no dual dialogue scenes, so this format is sourced from
-Guernsey-Creative's JS parser and Scriptty's FDX analysis. **Verify against a
-known dual-dialogue FDX before relying on this in production.**
+**Parse rule**: When a `Character` paragraph has a `<DualDialogue>` child, walk
+its children (Character + Dialogue paragraphs in pairs) rather than treating the
+outer paragraph as a single character cue.
+
+**Note**: THE-WAIF contains no dual dialogue. This structure was confirmed against
+a 207-scene Fade In FDX export (REARVIEW.fdx, 520KB). The Fade In application
+produces FDX that Final Draft 11+ can import.
 
 ---
 
@@ -421,29 +436,45 @@ schoonmaker) document this structure but handling varies.
 
 ### 6.1 Tag Categories
 
-FDX files can contain production tagging data for breakdown elements. THE-WAIF's
-FDX contains 22 `<TagCategory>` elements in the preamble.
+**[VERIFIED — THE-WAIF (22 categories), REARVIEW.fdx (22 categories)]**
+
+FDX files can contain production tagging data for breakdown elements in a
+`<TagData>` element in the preamble. Confirmed in both Final Draft and Fade In
+exports:
 
 ```xml
-<TagCategories>
-  <TagCategory Name="Cast" Color="..." />
-  <TagCategory Name="Props" Color="..." />
-  ...
-</TagCategories>
+<TagData>
+  <TagCategories>
+    <TagCategory Color="#00000000FFFF" Id="01fc9642-84ff-4366-b37c-a3068dee57e8"
+                 Name="Cast" Number="1" Style="Bold"/>
+    <TagCategory Color="#0000BFBFFFFF" Id="028a4e2b-b507-4d09-88ab-90e3edae9071"
+                 Name="Background Actors" Number="2" Style="Bold"/>
+    ...
+  </TagCategories>
+  <TagDefinitions/>
+  <Tags/>
+</TagData>
 ```
+
+**TagCategory attributes**:
+
+| Attribute | Example | Description |
+|-----------|---------|-------------|
+| `Name` | `"Cast"`, `"Props"` | Human-readable category name |
+| `Color` | `"#00000000FFFF"` | RGB color with alpha prefix |
+| `Id` | UUID | Unique identifier (Fade In uses UUIDs; Final Draft may use integers) |
+| `Number` | `"1"` | Category sort order |
+| `Style` | `"Bold"` | Text style for category label |
+
+**`<TagDefinitions/>` and `<Tags/>`**: Present in Fade In exports but empty in
+observed files. These may store per-scene tag assignments when populated.
+**[PROVISIONAL]**
 
 ### 6.2 Scene Tags
 
-Within paragraphs, `<TagData>` elements reference tagged categories
-**[PROVISIONAL — THE-WAIF contains 2 TagData elements, need further analysis]**:
-
-```xml
-<Paragraph Type="Scene Heading">
-  <SceneProperties Length="2/8" Page="1"/>
-  <Text>INT. KITCHEN - DAY</Text>
-  <TagData Category="Props" Tag="Coffee mug" />
-</Paragraph>
-```
+Within scene heading paragraphs, `<TagData>` elements reference tagged categories.
+THE-WAIF contains 2 TagData elements in the preamble (not scene-level). Scene-level
+tagging structure is still unconfirmed. **[PROVISIONAL]**
 
 ---
 
@@ -537,24 +568,21 @@ production FDX files by this project.
 
 | Feature | Status | Priority | Source |
 |---------|--------|----------|--------|
-| Dual dialogue (`<DualDialogue>` wrapper) | PROVISIONAL | MEDIUM | screenplay-js, scriptty |
 | Scene synopses (`Summary/Paragraph/Text`) | UNCONFIRMED | LOW | XPath gist, screenplay-js |
 | Multi-page scene length (beyond `8/8`) | PROVISIONAL | LOW | Inferred |
 | `Lyrics` paragraph type | UNCONFIRMED | LOW | rsdoiel struct |
 | `Outline N` paragraph types | UNCONFIRMED | LOW | rsdoiel struct |
-| TagData structure and semantics | PROVISIONAL | MEDIUM | 2 elements in THE-WAIF |
+| Scene-level TagData assignments | PROVISIONAL | MEDIUM | TagData in preamble only |
 | `FirstIndent` / `Leading` / `LeftIndent` values | UNCONFIRMED | LOW | rsdoiel struct only |
 | `ScriptNote` nested structure | UNCONFIRMED | LOW | XPath gist |
 | `SmartType` configuration format | UNCONFIRMED | LOW | rsdoiel struct only |
 | `SplitState` / `WindowState` schema | UNCONFIRMED | LOW | rsdoiel struct (UI metadata) |
 
-**Newly verified** (removed from gaps in this revision): `StartsNewPage`, `Alignment`,
-`RevisionID`, `NumberScheme="1A"`, title-page paragraph types (`Beat`, `Cast List`,
-`Center`, `Last Revised`, `Right`, `StoryMap`), preamble elements (`ElementSettings`,
-`PageLayout`, `TextState`, `ScriptNoteDefinitions`, `SmartType`, `MoresAndContinueds`,
-`SpellCheckIgnoreLists`, `WindowState`, `UnanchoredScriptNotes`), `SceneArcBeats` +
-`CharacterArcBeat`, autocomplete lists (`Characters`, `SceneIntros`, `Locations`,
-`TimesOfDay`, `Transitions`, `Extensions`), `DynamicLabel` element.
+**Newly verified** (removed from gaps in this revision): DualDialogue wrapper
+structure, TagCategory UUID-based attributes, `Fade In` as FDX source application,
+`RevisionID` on all Text elements (4,493 instances confirmed), 207-scene Fade In
+export as test fixture. DualDialogue confirmed to use `<DualDialogue>` inside
+`<Paragraph Type="Character">` — not the `^` suffix (Fountain convention).
 
 **To verify remaining gaps**: Find or produce FDX files with dual dialogue, scene
 synopses, lyrics, and script notes. Submit test fixtures as a PR.
