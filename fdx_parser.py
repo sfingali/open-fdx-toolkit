@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 __version__ = "0.1.0"
-__all__ = ["ParsedScene", "ParsedParagraph", "parse_file", "parse_fdx"]
+__all__ = ["ParsedScene", "ParsedParagraph", "ScriptNote", "DualDialoguePair", "parse_file", "parse_fdx"]
 
 
 @dataclass
@@ -33,6 +33,27 @@ class ParsedParagraph:
     type: str  # "Action", "Character", "Dialogue", "Parenthetical", etc.
     text: str
     styles: list[str] = field(default_factory=list)  # ["Bold", "Italic"], etc.
+
+
+@dataclass
+class ScriptNote:
+    """A script note attached to a scene."""
+
+    name: str
+    text: str
+    author: str = ""
+    date_time: str = ""
+    color: str = ""
+
+
+@dataclass
+class DualDialoguePair:
+    """A pair of simultaneous dialogue blocks."""
+
+    character_a: str
+    dialogue_a: str
+    character_b: str
+    dialogue_b: str
 
 
 @dataclass
@@ -52,6 +73,9 @@ class ParsedScene:
     page_eighths: int = 1
     narrative_position_hint: str | None = None
     has_dual_dialogue: bool = False
+    dual_dialogue_pairs: list[DualDialoguePair] = field(default_factory=list)
+    synopsis: str = ""
+    script_notes: list[ScriptNote] = field(default_factory=list)
     story_date_marker: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -72,6 +96,16 @@ class ParsedScene:
             "page_eighths": self.page_eighths,
             "narrative_position_hint": self.narrative_position_hint,
             "has_dual_dialogue": self.has_dual_dialogue,
+            "dual_dialogue_pairs": [
+                {"character_a": d.character_a, "dialogue_a": d.dialogue_a,
+                 "character_b": d.character_b, "dialogue_b": d.dialogue_b}
+                for d in self.dual_dialogue_pairs
+            ],
+            "synopsis": self.synopsis,
+            "script_notes": [
+                {"name": s.name, "text": s.text, "author": s.author}
+                for s in self.script_notes
+            ],
             "story_date_marker": self.story_date_marker,
         }
 
@@ -216,6 +250,9 @@ def parse_fdx(text: str) -> list[ParsedScene]:
     current_page_eighths: int = 1
     current_narrative: str | None = None
     current_scene_num: str = ""
+    current_synopsis: str = ""
+    current_script_notes: list[ScriptNote] = []
+    current_dual_pairs: list[DualDialoguePair] = []
     auto_num: int = 0
     has_dual: bool = False
 
@@ -224,7 +261,24 @@ def parse_fdx(text: str) -> list[ParsedScene]:
         text, style_lists = _get_text_and_styles(para)
         text = text.strip()
         styles = _flatten_styles(style_lists)
-        if not text and ptype != "Scene Heading":
+
+        # Extract ScriptNotes and DualDialogue BEFORE the text-emptiness skip,
+        # since General paragraphs wrapping these have no direct <Text> children.
+        for sn in para.findall("ScriptNote"):
+            sn_para = sn.find("Paragraph")
+            sn_text = "".join(t.text or "" for t in (sn_para.findall("Text") if sn_para is not None else [])).strip()
+            if sn_text:
+                current_script_notes.append(ScriptNote(
+                    name=sn.get("Name", ""),
+                    text=sn_text,
+                    author=sn.get("Author", ""),
+                    date_time=sn.get("DateTime", ""),
+                    color=sn.get("Color", ""),
+                ))
+
+        has_dd_child = para.find("DualDialogue") is not None
+
+        if not text and ptype != "Scene Heading" and not has_dd_child:
             continue
 
         # Track as structured paragraph
@@ -248,6 +302,9 @@ def parse_fdx(text: str) -> list[ParsedScene]:
                     paragraphs=current_paragraphs.copy(),
                     page_eighths=current_page_eighths,
                     has_dual_dialogue=has_dual,
+                    dual_dialogue_pairs=current_dual_pairs.copy(),
+                    synopsis=current_synopsis,
+                    script_notes=current_script_notes.copy(),
                     narrative_position_hint=current_narrative,
                 ))
 
@@ -257,6 +314,9 @@ def parse_fdx(text: str) -> list[ParsedScene]:
             current_body = []
             current_chars = []
             current_paragraphs = []
+            current_dual_pairs = []
+            current_script_notes = []
+            current_synopsis = ""
             has_dual = False
             sp = para.find("SceneProperties")
             current_scene_num = sp.get("Number", "") if sp is not None else ""
@@ -265,11 +325,42 @@ def parse_fdx(text: str) -> list[ParsedScene]:
                 if sp is not None
                 else 1
             )
+            # Extract synopsis from SceneProperties/Summary
+            if sp is not None:
+                summary = sp.find("Summary")
+                if summary is not None:
+                    summary_para = summary.find("Paragraph")
+                    if summary_para is not None:
+                        current_synopsis = "".join(
+                            t.text or "" for t in summary_para.findall("Text")
+                        ).strip()
 
         elif ptype == "Character":
             current_chars.append(text)
             current_body.append(text)
             current_paragraphs.append(pp)
+            # Walk DualDialogue children if present
+            dual = para.find("DualDialogue")
+            if dual is not None:
+                has_dual = True
+                dd_chars: list[str] = []
+                dd_dialogue: list[str] = []
+                for dd_para in dual.findall("Paragraph"):
+                    dd_type = dd_para.get("Type", "")
+                    dd_text = "".join(t.text or "" for t in dd_para.findall("Text")).strip()
+                    if dd_type == "Character":
+                        dd_chars.append(dd_text)
+                    elif dd_type == "Dialogue":
+                        dd_dialogue.append(dd_text)
+                # Pair them up
+                for i in range(min(len(dd_chars), len(dd_dialogue))):
+                    if i + 1 < len(dd_chars) and i + 1 < len(dd_dialogue):
+                        # We have pairs — take two at a time
+                        if i % 2 == 0:
+                            current_dual_pairs.append(DualDialoguePair(
+                                character_a=dd_chars[i], dialogue_a=dd_dialogue[i],
+                                character_b=dd_chars[i + 1], dialogue_b=dd_dialogue[i + 1],
+                            ))
 
         elif ptype == "Dialogue":
             current_body.append(text)
@@ -279,9 +370,32 @@ def parse_fdx(text: str) -> list[ParsedScene]:
             current_body.append(f"({text})" if not text.startswith("(") else text)
             current_paragraphs.append(pp)
 
-        elif ptype in ("Action", "General", "Transition", "Shot"):
+        elif ptype in ("Action", "General", "Transition", "Shot",
+                       "Beat", "Cast List", "Center", "Last Revised",
+                       "Page #", "Right", "Script", "StoryMap",
+                       "Normal Text"):
             current_body.append(text)
             current_paragraphs.append(pp)
+            # DualDialogue can appear inside General paragraphs too (Final Draft quirk)
+            if ptype == "General":
+                dual = para.find("DualDialogue")
+                if dual is not None:
+                    has_dual = True
+                    dd_chars: list[str] = []
+                    dd_dialogue: list[str] = []
+                    for dd_para in dual.findall("Paragraph"):
+                        dd_type = dd_para.get("Type", "")
+                        dd_text = "".join(t.text or "" for t in dd_para.findall("Text")).strip()
+                        if dd_type == "Character":
+                            dd_chars.append(dd_text)
+                        elif dd_type == "Dialogue":
+                            dd_dialogue.append(dd_text)
+                    for i in range(0, min(len(dd_chars), len(dd_dialogue)), 2):
+                        if i + 1 < len(dd_chars) and i + 1 < len(dd_dialogue):
+                            current_dual_pairs.append(DualDialoguePair(
+                                character_a=dd_chars[i], dialogue_a=dd_dialogue[i],
+                                character_b=dd_chars[i + 1], dialogue_b=dd_dialogue[i + 1],
+                            ))
 
     # Save final scene
     if current_slugline is not None:
@@ -300,6 +414,9 @@ def parse_fdx(text: str) -> list[ParsedScene]:
             paragraphs=current_paragraphs.copy(),
             page_eighths=current_page_eighths,
             has_dual_dialogue=has_dual,
+            dual_dialogue_pairs=current_dual_pairs.copy(),
+            synopsis=current_synopsis,
+            script_notes=current_script_notes.copy(),
             narrative_position_hint=current_narrative,
         ))
 
