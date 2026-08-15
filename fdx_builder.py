@@ -136,12 +136,21 @@ def scene_from_parsed(parsed_scene, paragraphs: list[Paragraph] | None = None) -
         length=f"{parsed_scene.page_eighths}/8",
         number=parsed_scene.scene_number,
     )
+    if paragraphs is not None:
+        builder_paragraphs = paragraphs
+    else:
+        builder_paragraphs = [
+            Paragraph(p.type, p.text, style="+".join(p.styles) if p.styles else "")
+            for p in parsed_scene.paragraphs
+        ]
+        if not builder_paragraphs:
+            builder_paragraphs = [
+                Paragraph("Action", line)
+                for line in parsed_scene.body_lines
+            ]
     return Scene(
         heading=parsed_scene.slugline,
         number=parsed_scene.scene_number,
-        paragraphs=paragraphs or [
-            Paragraph("Action", line)
-            for line in parsed_scene.body_lines
-        ],
+        paragraphs=builder_paragraphs,
         properties=sp,
     )
