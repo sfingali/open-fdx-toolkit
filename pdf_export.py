@@ -115,12 +115,26 @@ def _paragraph_lines(scene: ParsedScene) -> list[tuple[str, str]]:
     return rows
 
 
-def build_pdf(scenes: list[ParsedScene], title: str = "") -> bytes:
+def build_pdf(scenes: list[ParsedScene], title: str = "",
+              title_page: dict | None = None) -> bytes:
     """Render scenes into a screenplay PDF, returning the PDF bytes.
 
     Args:
         scenes: ParsedScene list in script order.
-        title: Optional title shown centered on the first page.
+        title: Optional title shown centered on the first page (legacy
+            inline behavior — kept for backward compatibility).
+        title_page: Optional dict of title-page fields, each rendered
+            centered on its own dedicated page before the script:
+
+            - ``title`` (str) — script title, large all-caps
+            - ``credit`` (str) — e.g. "Production Draft" / "Screenplay by"
+            - ``author`` (str) — writer name(s)
+            - ``date`` (str) — draft date
+            - ``extra`` (list[str]) — additional centered lines
+              (studio, contact, etc.)
+
+            When provided, the title page is followed by a page break so
+            scene 1 starts on a fresh page.
 
     Returns:
         PDF file bytes.
@@ -133,13 +147,18 @@ def build_pdf(scenes: list[ParsedScene], title: str = "") -> bytes:
         ) from e
 
     doc = pymupdf.open()
-    page = _Page(doc)
 
-    if title:
-        page.emit("", 108, 72)
-        page.emit(title.upper(), 108, 72, bold=True)
-        page.emit("", 108, 72)
-        page.emit("", 108, 72)
+    if title_page:
+        _draw_title_page(doc, title_page)
+        # Scene 1 starts on a fresh page
+        page = _Page(doc)
+    else:
+        page = _Page(doc)
+        if title:
+            page.emit("", 108, 72)
+            page.emit(title.upper(), 108, 72, bold=True)
+            page.emit("", 108, 72)
+            page.emit("", 108, 72)
 
     for scene in scenes:
         rows = _paragraph_lines(scene)
@@ -173,8 +192,48 @@ def build_pdf(scenes: list[ParsedScene], title: str = "") -> bytes:
     return data
 
 
-def write_pdf(path: str, scenes: list[ParsedScene], title: str = "") -> None:
+def _draw_title_page(doc, tp: dict) -> None:
+    """Render a dedicated screenplay title page (WGA-style layout).
+
+    Title centered around 1/3 down; writer credit block ~1/2; date lower.
+    No page number on the title page.
+    """
+    page = doc.new_page(width=PAGE_W, height=PAGE_H)
+
+    def center(text: str, y: float, fontsize: float = 12.0,
+               bold: bool = False) -> None:
+        width = len(text) * CHAR_W * (fontsize / 12.0)
+        x = max((PAGE_W - width) / 2, M_ACTION)
+        page.insert_text((x, y), text, fontsize=fontsize,
+                         fontname="courier-bold" if bold else "courier")
+
+    title = (tp.get("title") or "").upper()
+    if title:
+        center(title, PAGE_H * 0.33, fontsize=16.0, bold=True)
+
+    credit = tp.get("credit")
+    author = tp.get("author")
+    extra = tp.get("extra", [])
+    y = PAGE_H * 0.50
+    if credit:
+        center(credit, y)
+        y += LINE_H
+    if author:
+        center(author, y)
+        y += LINE_H
+
+    for line in extra:
+        center(line, y)
+        y += LINE_H
+
+    date = tp.get("date")
+    if date:
+        center(date, PAGE_H * 0.78)
+
+
+def write_pdf(path: str, scenes: list[ParsedScene], title: str = "",
+              title_page: dict | None = None) -> None:
     """Render scenes to a screenplay PDF file on disk."""
-    data = build_pdf(scenes, title=title)
+    data = build_pdf(scenes, title=title, title_page=title_page)
     with open(path, "wb") as f:
         f.write(data)
