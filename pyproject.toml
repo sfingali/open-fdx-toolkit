@@ -1,7 +1,7 @@
 [project]
 name = "open-fdx-toolkit"
-version = "0.1.0"
-description = "Complete Final Draft (.fdx) toolkit — parse, build, and validate FDX XML screenplays. Zero dependencies."
+version = "0.2.0"
+description = "Screenplay toolkit — parse, build, and convert FDX, Fountain, Fade In, PDF, and text. Zero dependencies."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
@@ -21,16 +21,18 @@ classifiers = [
 
 [project.scripts]
 fdx-info = "fdx_cli:main"
+script-cli = "script_cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+pdf = ["pymupdf"]
 
 [build-system]
 requires = ["setuptools>=75"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-py-modules = ["fdx_parser", "fdx_builder", "fdx_cli", "fadein_parser", "fadein_builder"]
+py-modules = ["fdx_parser", "fdx_builder", "fdx_cli", "fadein_parser", "fadein_builder", "fountain_parser", "fountain_builder", "pdf_import", "pdf_export", "txt_import", "script_cli"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
