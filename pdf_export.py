@@ -177,7 +177,10 @@ def build_pdf(scenes: list[ParsedScene], title: str = "",
             elif ptype == "Dialogue":
                 page.emit(text, M_DIALOGUE, M_RIGHT)
             elif ptype == "Transition":
-                page.emit(text, PAGE_W - M_RIGHT - len(text) * CHAR_W, M_RIGHT)
+                # Right-aligned single line. Left already accounts for the
+                # right margin, so pass right=0 to avoid the floating-point
+                # wrap bug (50.4 // 7.2 == 6.999... -> wraps "CUT TO:").
+                page.emit(text, PAGE_W - M_RIGHT - len(text) * CHAR_W, 0)
             elif ptype == "Center":
                 width = PAGE_W - M_ACTION - M_RIGHT
                 centered = (PAGE_W - len(text) * CHAR_W) / 2
