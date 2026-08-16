@@ -57,6 +57,7 @@ class LayoutLine:
     text: str
     x0: float
     page: int = 0
+    y: float = 0.0  # vertical position of line top (points from page top)
 
 
 def extract_layout_lines(pdf_path: str) -> list[LayoutLine]:
@@ -82,10 +83,11 @@ def extract_layout_lines(pdf_path: str) -> list[LayoutLine]:
                 continue
             for line in block.get("lines", []):
                 x0 = line["bbox"][0]
+                y = line["bbox"][1]
                 spans = [s.get("text", "") for s in line.get("spans", [])]
                 text = "".join(spans).strip()
                 if text:
-                    lines.append(LayoutLine(text=text, x0=x0, page=page_no + 1))
+                    lines.append(LayoutLine(text=text, x0=x0, page=page_no + 1, y=y))
     doc.close()
     return lines
 
@@ -211,6 +213,15 @@ def parse_pdf(pdf_path: str) -> list[ParsedScene]:
         Title-page lines and continuation markers are discarded.
     """
     lines = extract_layout_lines(pdf_path)
+    return parse_layout_lines(lines)
+
+
+def parse_layout_lines(lines: list[LayoutLine]) -> list[ParsedScene]:
+    """Classify pre-extracted layout lines into ParsedScene objects.
+
+    Split out so callers can filter lines (revision markers, page numbers,
+    deleted-scene blocks) before classification.
+    """
     if not lines:
         return []
 
