@@ -162,11 +162,23 @@ def build_pdf(scenes: list[ParsedScene], title: str = "",
 
     for scene in scenes:
         rows = _paragraph_lines(scene)
+        prev_type = None
         for ptype, text in rows:
             if not text.strip():
                 continue
+            # Standard screenplay paragraph spacing: blank line between
+            # distinct paragraph blocks (scene heading, action, character,
+            # dialogue), but NOT between consecutive dialogue lines or a
+            # parenthetical and its dialogue.
+            if ptype != prev_type:
+                if prev_type is not None and not (
+                    (prev_type == "Character" and ptype == "Parenthetical")
+                    or (prev_type == "Parenthetical" and ptype == "Dialogue")
+                    or (prev_type == "Dialogue" and ptype == "Dialogue")
+                ):
+                    page.blank()
+            prev_type = ptype
             if ptype == "Scene Heading":
-                page.blank()
                 page.emit(text, M_ACTION, M_RIGHT, bold=True)
             elif ptype == "Action":
                 page.emit(text, M_ACTION, M_RIGHT)
