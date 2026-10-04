@@ -12,7 +12,7 @@ from fadein_parser import parse_fadein_bytes
 from fdx_parser import ParsedParagraph, ParsedScene, parse_file
 
 SAMPLE_FADEIN = "/opt/data/home/projects/rsdoiel-fdx/testdata/sample-01.fadein"
-SAMPLE_FDX = "/opt/data/home/projects/the-sample/drafts/the sample script - 03-18-26b - FINGLETON.fdx"
+SAMPLE_FDX = os.environ.get("SAMPLE_FDX", "")
 
 
 def _scene(number, slugline, paragraphs):

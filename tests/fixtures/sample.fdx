@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<FinalDraft DocumentType="Script" Template="No" Version="2">
+  <Content>
+    <Paragraph Type="Scene Heading" Number="1">
+      <SceneProperties Length="2/8" Page="1">
+        <Summary><Paragraph><Text>Scene 1 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 1 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="2">
+      <SceneProperties Length="2/8" Page="2">
+        <Summary><Paragraph><Text>Scene 2 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 2 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="3">
+      <SceneProperties Length="2/8" Page="3">
+        <Summary><Paragraph><Text>Scene 3 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 3 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Character">
+      <DualDialogue>
+        <Paragraph Type="Character"><Text>ALEX</Text></Paragraph>
+        <Paragraph Type="Dialogue"><Text>Left or right?</Text></Paragraph>
+        <Paragraph Type="Character"><Text>CLAIRE</Text></Paragraph>
+        <Paragraph Type="Dialogue"><Text>Neither.</Text></Paragraph>
+      </DualDialogue>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="4">
+      <SceneProperties Length="2/8" Page="4">
+        <Summary><Paragraph><Text>Scene 4 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 4 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="5">
+      <SceneProperties Length="2/8" Page="5">
+        <Summary><Paragraph><Text>Scene 5 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 5 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="6">
+      <SceneProperties Length="2/8" Page="6">
+        <Summary><Paragraph><Text>Scene 6 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 6 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="7">
+      <SceneProperties Length="2/8" Page="7">
+        <Summary><Paragraph><Text>Scene 7 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 7 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="8">
+      <SceneProperties Length="2/8" Page="8">
+        <Summary><Paragraph><Text>Scene 8 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 8 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="9">
+      <SceneProperties Length="2/8" Page="9">
+        <Summary><Paragraph><Text>Scene 9 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 9 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="10">
+      <SceneProperties Length="2/8" Page="10">
+        <Summary><Paragraph><Text>Scene 10 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 10 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="11">
+      <SceneProperties Length="2/8" Page="11">
+        <Summary><Paragraph><Text>Scene 11 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 11 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading" Number="12">
+      <SceneProperties Length="2/8" Page="12">
+        <Summary><Paragraph><Text>Scene 12 synopsis.</Text></Paragraph></Summary>
+      </SceneProperties>
+      <Text>INT. ROOM 12 - DAY</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>Alex waits by the window.</Text>
+    </Paragraph>
+  </Content>
+</FinalDraft>

@@ -97,12 +97,16 @@ script-cli info script.fdx --flashbacks      # non-linear scenes
 
 ## Ground-Truth Verification
 
-The test suite validates every parser against real production files
-(the sample script, 278 scenes) when present at the standard paths:
+The test suite can validate every parser against real production files when you
+point it at one, via environment variables:
 
-- `/opt/data/home/projects/the-sample/the sample script.fountain`
-- `/opt/data/home/projects/the-sample/drafts/the sample script - 03-18-26b - FINGLETON.fdx`
-- `/opt/data/home/projects/the-sample/drafts/the sample script - 03-17-26 - FINGLETON.pdf`
+```
+SAMPLE_FDX=/path/to/draft.fdx SAMPLE_PDF=/path/to/draft.pdf \
+SAMPLE_FOUNTAIN=/path/to/draft.fountain python -m pytest tests/ -q
+```
+
+Those tests skip when the variables are unset, so the suite passes on a clean
+checkout. Screenplay drafts are never committed to this repository.
 
 Cross-format tests assert identical scene counts, sluglines, character sets,
 and location sets across FDX ↔ Fountain ↔ Fade In ↔ PDF. The suite also

@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pdf_export import build_pdf, write_pdf, _wrap
 
-SAMPLE_FDX = "/opt/data/home/projects/the-sample/drafts/the sample script - 03-18-26b - FINGLETON.fdx"
+SAMPLE_FDX = os.environ.get("SAMPLE_FDX", "")
 
 pymupdf = pytest.importorskip("pymupdf")
 

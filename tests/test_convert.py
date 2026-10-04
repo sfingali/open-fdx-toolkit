@@ -20,8 +20,8 @@ from fountain_builder import build_fountain
 from fountain_parser import parse_fountain
 from txt_import import parse_plain_text
 
-SAMPLE_FDX = "/opt/data/home/projects/the-sample/drafts/the sample script - 03-18-26b - FINGLETON.fdx"
-SAMPLE_PDF = "/opt/data/home/projects/the-sample/drafts/the sample script - 03-17-26 - FINGLETON.pdf"
+SAMPLE_FDX = os.environ.get("SAMPLE_FDX", "")
+SAMPLE_PDF = os.environ.get("SAMPLE_PDF", "")
 
 SYNTHETIC = """INT. KITCHEN - DAY
 

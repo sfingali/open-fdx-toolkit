@@ -4,3 +4,10 @@ __pycache__/
 *.egg-info/
 dist/
 .DS_Store
+
+# Screenplay drafts and exports are never committed (test fixtures excepted)
+*.fdx
+*.fountain
+*.fadein
+*.pdf
+!tests/fixtures/*.fdx

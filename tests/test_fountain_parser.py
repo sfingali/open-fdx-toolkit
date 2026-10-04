@@ -6,7 +6,7 @@ import pytest
 
 from fountain_parser import parse_fountain
 
-SAMPLE_FOUNTAIN_PATH = "/opt/data/home/projects/the-sample/the sample script.fountain"
+SAMPLE_FOUNTAIN_PATH = os.environ.get("SAMPLE_FOUNTAIN", "")
 
 
 def test_title_page_key_value_blocks():
@@ -262,7 +262,7 @@ def test_sample_fountain_ground_truth():
     # If the matching FDX export is available, the fountain parse must align
     # exactly with the FDX ground truth for scene count, numbers, and
     # sluglines.
-    fdx_path = "/opt/data/home/projects/the-sample/drafts/the sample script - 03-18-26b - FINGLETON.fdx"
+    fdx_path = os.environ.get("SAMPLE_FDX", "")
     if os.path.exists(fdx_path):
         from fdx_parser import parse_file
 
