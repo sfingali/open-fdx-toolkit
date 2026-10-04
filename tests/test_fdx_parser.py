@@ -132,6 +132,46 @@ class TestParseFdx:
         assert scenes[0].scene_number_source == "auto"
         assert scenes[0].scene_number == "1"
 
+    def test_scene_number_on_paragraph(self):
+        # Where Final Draft and Fade In actually write scene numbers.
+        fdx = """<?xml version="1.0"?>
+<FinalDraft>
+  <Content>
+    <Paragraph Type="Scene Heading" Number="12A">
+      <SceneProperties Length="1/8" Page="1"/>
+      <Text>INT. ROOM - DAY</Text>
+    </Paragraph>
+    <Paragraph Number="13" Type="Scene Heading">
+      <Text>EXT. YARD - NIGHT</Text>
+    </Paragraph>
+  </Content>
+</FinalDraft>"""
+        scenes = parse_fdx(fdx)
+        assert [(s.scene_number, s.scene_number_source) for s in scenes] == [
+            ("12A", "script"), ("13", "script")]
+
+    def test_paragraph_number_wins_over_scene_properties(self):
+        fdx = """<?xml version="1.0"?>
+<FinalDraft>
+  <Content>
+    <Paragraph Type="Scene Heading" Number="7">
+      <SceneProperties Length="1/8" Page="1" Number="99"/>
+      <Text>INT. ROOM - DAY</Text>
+    </Paragraph>
+  </Content>
+</FinalDraft>"""
+        assert parse_fdx(fdx)[0].scene_number == "7"
+
+    def test_real_numbered_script_keeps_its_numbers(self):
+        from pathlib import Path
+        from fdx_parser import parse_file
+        scenes = parse_file(Path(__file__).parent / "fixtures" / "rearview-fd.fdx")
+        numbered = [s for s in scenes if s.scene_number_source == "script"]
+        assert len(numbered) == 194  # every numbered heading in the file
+        numbers = [s.scene_number for s in numbered]
+        assert {"71E", "108A"} <= set(numbers)
+        assert numbers[:3] == ["1", "2", "3"] and numbers != [str(i) for i in range(1, 195)]
+
     def test_to_dict(self):
         fdx = """<?xml version="1.0"?>
 <FinalDraft>
