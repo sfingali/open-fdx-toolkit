@@ -127,3 +127,63 @@ class TestSampleGroundTruth:
         scenes = parse_pdf(SAMPLE_PDF)
         chars = {c for s in scenes for c in s.characters}
         assert "T.R." in chars
+
+
+class TestPrintedSceneNumbers:
+    """Numbered scripts print each scene's number in both margins of its
+    heading. Those numbers are the script's, so they must come through."""
+
+    def _numbered_pdf(self, tmp_path):
+        doc = pymupdf.open()
+        page = doc.new_page(width=612, height=792)
+        y = 72
+
+        def put(x, text):
+            page.insert_text((x, y), text, fontname="cour", fontsize=12)
+
+        put(522, "1.")   # page number, top right
+        y = 108
+        for num, heading, action in [("12", "INT. HOUSE - DAY", "Ben waits."),
+                                     ("12A", "EXT. HOUSE - DAY", "Rain."),
+                                     ("13", "INT. CAR - NIGHT", "Ben drives.")]:
+            put(54, num)
+            put(108, heading)
+            put(540, num)
+            y += 24
+            put(108, action)
+            y += 36
+        path = tmp_path / "numbered.pdf"
+        doc.save(str(path))
+        doc.close()
+        return str(path)
+
+    def test_numbers_printed_beside_headings(self, tmp_path):
+        scenes = parse_pdf(self._numbered_pdf(tmp_path))
+        assert [(s.scene_number, s.scene_number_source, s.slugline) for s in scenes] == [
+            ("12", "script", "INT. HOUSE - DAY"),
+            ("12A", "script", "EXT. HOUSE - DAY"),
+            ("13", "script", "INT. CAR - NIGHT"),
+        ]
+        assert all(not any(n in s.body_lines for n in ("12", "12A", "13")) for s in scenes)
+
+    def test_numbers_joined_into_the_heading_text(self):
+        from pdf_import import parse_layout_lines
+        lines = [LayoutLine("12INT. HOUSE - DAY12", 54, 1, 100),
+                 LayoutLine("Ben waits.", 108, 1, 124),
+                 LayoutLine("12A  EXT. HOUSE - DAY  12A", 54, 1, 160),
+                 LayoutLine("Rain.", 108, 1, 184),
+                 LayoutLine("INT. CAR - NIGHT", 108, 1, 220),
+                 LayoutLine("Ben drives.", 108, 1, 244)]
+        scenes = parse_layout_lines(lines)
+        assert [(s.scene_number, s.scene_number_source, s.slugline) for s in scenes] == [
+            ("12", "script", "INT. HOUSE - DAY"),
+            ("12A", "script", "EXT. HOUSE - DAY"),
+            ("3", "auto", "INT. CAR - NIGHT"),
+        ]
+
+    def test_unnumbered_pdf_still_counts(self):
+        from pdf_import import parse_layout_lines
+        lines = [LayoutLine("INT. A - DAY", 108, 1, 100), LayoutLine("One.", 108, 1, 124),
+                 LayoutLine("EXT. B - NIGHT", 108, 1, 160), LayoutLine("Two.", 108, 1, 184)]
+        assert [(s.scene_number, s.scene_number_source)
+                for s in parse_layout_lines(lines)] == [("1", "auto"), ("2", "auto")]
