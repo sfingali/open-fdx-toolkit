@@ -47,6 +47,14 @@ _EXTRA_TRANSITIONS = frozenset({
 })
 _CONTINUATION_RE = re.compile(r"^\s*\(?(CONT'D|MORE|CONTINUED)\)?\s*$", re.IGNORECASE)
 _PAGE_NUM_RE = re.compile(r"^\d+\.?\s*$")
+# A printed scene number: 12, 12A, 12AB, A12. Numbered scripts print it in
+# both margins of the heading line.
+_SCENE_NUM = r"(?:\d+[A-Z]{0,3}?|[A-Z]{1,2}\d+[A-Z]{0,2}?)"
+_SCENE_NUM_RE = re.compile(r"^%s$" % _SCENE_NUM)
+# The number may share the heading's text line, with or without a space
+# ("12  INT. HOUSE - DAY  12", or "12INT. HOUSE - DAY12" when spans join).
+_LEAD_NUM_RE = re.compile(
+    r"^(%s)\s*(?=(?:INT\.?/?EXT|EXT|INT|I/?E)\b)" % _SCENE_NUM, re.IGNORECASE)
 _PAREN_RE = re.compile(r"^\(.*\)$")
 
 
@@ -58,6 +66,7 @@ class LayoutLine:
     x0: float
     page: int = 0
     y: float = 0.0  # vertical position of line top (points from page top)
+    scene_number: str = ""  # printed scene number, set on scene-heading lines
 
 
 def extract_layout_lines(pdf_path: str) -> list[LayoutLine]:
@@ -90,6 +99,42 @@ def extract_layout_lines(pdf_path: str) -> list[LayoutLine]:
                     lines.append(LayoutLine(text=text, x0=x0, page=page_no + 1, y=y))
     doc.close()
     return lines
+
+
+def _attach_scene_numbers(lines: list[LayoutLine]) -> list[LayoutLine]:
+    """Move printed scene numbers onto their heading lines.
+
+    A numbered script prints the number in the left and right margins of
+    each scene heading. pymupdf returns those either as separate lines at
+    the heading's height, or joined into the heading's own text. Either way
+    the number becomes ``scene_number`` on the heading and is removed from
+    the text, so it is never mistaken for a page number or action.
+    """
+    out: list[LayoutLine] = []
+    for line in lines:
+        s = line.text.strip()
+        m = _LEAD_NUM_RE.match(s)
+        if m:
+            num = m.group(1).upper()
+            rest = s[m.end():].strip()
+            if rest.upper().endswith(num):
+                rest = rest[: -len(num)].rstrip()
+            out.append(LayoutLine(rest, line.x0, line.page, line.y, num))
+        else:
+            out.append(line)
+    headings = [l for l in out if _SLUG_RE.match(l.text.strip())]
+    kept: list[LayoutLine] = []
+    for line in out:
+        s = line.text.strip()
+        if _SCENE_NUM_RE.fullmatch(s):
+            mates = [h for h in headings
+                     if h.page == line.page and abs(h.y - line.y) < 3]
+            if mates:
+                if not mates[0].scene_number:
+                    mates[0].scene_number = s.upper()
+                continue
+        kept.append(line)
+    return kept
 
 
 def _detect_margins(lines: list[LayoutLine]) -> tuple[float, float, float]:
@@ -225,6 +270,7 @@ def parse_layout_lines(lines: list[LayoutLine]) -> list[ParsedScene]:
     if not lines:
         return []
 
+    lines = _attach_scene_numbers(lines)
     action_x, dialogue_x, character_x = _detect_margins(lines)
 
     # Build a list of meaningful (non-skip) lines so character-cue lookahead
@@ -273,8 +319,8 @@ def parse_layout_lines(lines: list[LayoutLine]) -> list[ParsedScene]:
             auto_num += 1
             parsed = _parse_slugline(text)
             current = ParsedScene(
-                scene_number=str(auto_num),
-                scene_number_source="auto",
+                scene_number=line.scene_number or str(auto_num),
+                scene_number_source="script" if line.scene_number else "auto",
                 slugline=text,
                 interior_exterior=parsed["interior_exterior"],
                 location=parsed["location"],
