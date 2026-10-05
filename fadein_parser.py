@@ -69,11 +69,14 @@ def _style_type(style: ET.Element | None) -> str:
 
 
 def _para_text(para: ET.Element) -> str:
-    """Extract joined text from a Fade In ``<text>`` element."""
-    text_el = para.find("text")
-    if text_el is None:
-        return ""
-    return "".join(text_el.itertext()).strip()
+    """Joined text of ALL of a paragraph's ``<text>`` runs.
+
+    Fade In splits a paragraph into several ``<text>`` runs whenever the
+    formatting or revision state changes mid-line (e.g. ``<text>INT. </text>
+    <text revision="1">FORESTER (MOVING)</text><text> - DAY</text>``).
+    Reading only the first run truncated such headings to ``INT.``.
+    """
+    return "".join("".join(t.itertext()) for t in para.findall("text")).strip()
 
 
 def _append_scene(

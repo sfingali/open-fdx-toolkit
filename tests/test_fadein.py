@@ -195,3 +195,36 @@ class TestRoundTrip:
             assert [(p.type, p.text) for p in fade_scene.paragraphs] == [
                 (p.type, p.text) for p in fdx_scene.paragraphs
             ]
+
+
+def _fadein_with_paras(paras_xml):
+    """A minimal .fadein (zipped OSF document.xml) with the given <para>s."""
+    doc = ('<?xml version="1.0" encoding="UTF-8"?>'
+           '<document type="Open Screenplay Format document" version="30">'
+           '<paragraphs>' + paras_xml + '</paragraphs></document>')
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("document.xml", doc)
+    return buf.getvalue()
+
+
+class TestSplitRuns:
+    def test_heading_split_across_revision_runs_is_read_whole(self):
+        data = _fadein_with_paras(
+            '<para><style basestylename="Scene Heading"/>'
+            '<text>INT. </text><text revision="1">FORESTER (MOVING)</text>'
+            '<text> - DAY #10#</text></para>'
+            '<para><style basestylename="Action"/>'
+            '<text>Ben drives. </text><text revision="1" bold="1">Fast.</text></para>')
+        scenes = parse_fadein_bytes(data)
+        assert len(scenes) == 1
+        assert scenes[0].slugline == "INT. FORESTER (MOVING) - DAY"
+        assert (scenes[0].scene_number, scenes[0].scene_number_source) == ("10", "script")
+        assert scenes[0].paragraphs[0].text == "Ben drives. Fast."
+
+    def test_single_run_unchanged(self):
+        data = _fadein_with_paras(
+            '<para><style basestylename="Scene Heading"/><text>EXT. YARD - NIGHT</text></para>')
+        scenes = parse_fadein_bytes(data)
+        assert scenes[0].slugline == "EXT. YARD - NIGHT"
+        assert scenes[0].scene_number_source == "auto"
