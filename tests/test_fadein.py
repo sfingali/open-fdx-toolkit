@@ -74,14 +74,15 @@ class TestBuildFadeIn:
             "Transition",
         } <= style_names
 
-    def test_scene_number_written_as_trailing_hash(self):
+    def test_scene_number_written_as_para_attribute(self):
         data = build_fadein([_scene("12", "INT. KITCHEN - DAY", [])])
         with zipfile.ZipFile(io.BytesIO(data)) as zf:
             root = ET.fromstring(zf.read("document.xml"))
 
         heading = root.find("paragraphs")[0]
         assert heading.find("style").get("basestylename") == "Scene Heading"
-        assert heading.find("text").text == "INT. KITCHEN - DAY #12#"
+        assert heading.get("number") == "12"
+        assert heading.find("text").text == "INT. KITCHEN - DAY"
 
         reparsed = parse_fadein_bytes(data)
         assert reparsed[0].scene_number == "12"
@@ -228,3 +229,28 @@ class TestSplitRuns:
         scenes = parse_fadein_bytes(data)
         assert scenes[0].slugline == "EXT. YARD - NIGHT"
         assert scenes[0].scene_number_source == "auto"
+
+
+class TestNumberAttribute:
+    """Real Fade In files store scene numbers as <para number="N">."""
+
+    def test_para_number_attribute_is_the_scene_number(self):
+        data = _fadein_with_paras(
+            '<para edited_by="SF" number="11"><style basestyle="Scene Heading"/>'
+            '<text>int. motel room - day</text></para>'
+            '<para><style basestyle="Action"/><text>Ben wakes.</text></para>'
+            '<para edited_by="SF"><style basestyle="Scene Heading"/>'
+            '<text>INT. BATHROOM - DAY</text></para>'
+            '<para number="12A"><style basestyle="Scene Heading"/>'
+            '<text>EXT. MOTEL - NIGHT</text></para>')
+        scenes = parse_fadein_bytes(data)
+        assert [(s.scene_number, s.scene_number_source) for s in scenes] == [
+            ("11", "script"), ("2", "auto"), ("12A", "script")]
+        assert scenes[0].slugline == "int. motel room - day"
+
+    def test_attribute_wins_over_text_suffix(self):
+        data = _fadein_with_paras(
+            '<para number="7"><style basestylename="Scene Heading"/>'
+            '<text>INT. A - DAY #99#</text></para>')
+        scenes = parse_fadein_bytes(data)
+        assert scenes[0].scene_number == "7" and scenes[0].slugline == "INT. A - DAY"

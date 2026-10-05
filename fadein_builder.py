@@ -3,9 +3,9 @@
 Builds a valid OSF ``document.xml`` inside a ``.fadein`` ZIP archive from
 ``ParsedScene`` objects produced by ``fdx_parser`` (or ``fadein_parser``).
 
-Scene numbers are written in Fade In's convention as a trailing ``#N#`` on
-the scene-heading text, so ``INT. KITCHEN - DAY`` with scene number ``12``
-becomes ``INT. KITCHEN - DAY #12#`` in the generated document.
+Scene numbers are written the way Fade In stores them: as a ``number``
+attribute on the scene-heading paragraph (``<para number="12">``), with the
+heading text left as is.
 """
 
 from __future__ import annotations
@@ -35,15 +35,6 @@ def _strip_outer_parentheses(text: str) -> str:
         inner = text[1:-1]
         if inner.count("(") == inner.count(")"):
             return inner
-    return text
-
-
-def _scene_heading_text(slugline: str, scene_number: str) -> str:
-    """Return the full slugline with Fade In's trailing scene number."""
-    text = (slugline or "").strip()
-    number = (scene_number or "").strip()
-    if number:
-        text = f"{text} #{number}#"
     return text
 
 
@@ -285,12 +276,11 @@ def build_fadein(scenes: list[ParsedScene], title_page: dict | None = None) -> b
 
     paragraphs_el = ET.SubElement(root, "paragraphs")
     for scene in scenes:
-        paragraphs_el.append(
-            _make_para(
-                "Scene Heading",
-                _scene_heading_text(scene.slugline, scene.scene_number),
-            )
-        )
+        heading = _make_para("Scene Heading", (scene.slugline or "").strip())
+        number = (scene.scene_number or "").strip()
+        if number:
+            heading.set("number", number)
+        paragraphs_el.append(heading)
 
         if scene.paragraphs:
             for para in scene.paragraphs:
