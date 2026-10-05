@@ -152,6 +152,9 @@ def parse_fadein_bytes(data: bytes) -> list[ParsedScene]:
 
         if ptype == "Scene Heading":
             slugline, scene_num = _split_scene_number(text)
+            # Fade In stores (locked) scene numbers as <para number="12">;
+            # the trailing "#12#" text form is only a fallback.
+            scene_num = (para.get("number") or "").strip() or scene_num
             if not slugline:
                 continue
 
