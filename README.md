@@ -70,6 +70,7 @@ for s in scenes:
 | `txt_import.py` | Classify plain-text screenplays (heuristics) |
 | `script_cli.py` | `script-cli` — inspect & convert any format |
 | `fdx_cli.py` | `fdx-info` — terminal inspector (legacy) |
+| `fadein_mcp/` | MCP server — inspect, search, diff and edit `.fadein` drafts from an AI agent |
 
 ## Converting Between Formats
 
@@ -94,6 +95,65 @@ script-cli info script.fdx --characters      # cast with scene counts
 script-cli info script.fdx --locations       # locations with scene counts
 script-cli info script.fdx --flashbacks      # non-linear scenes
 ```
+
+## Fade In MCP Server
+
+`fadein_mcp/` is a [Model Context Protocol](https://modelcontextprotocol.io)
+server over stdio, so an AI agent can work on `.fadein` drafts without Fade In
+running and without a Sync/Dropbox/Drive integration: point it at a file path.
+
+```bash
+pip install "open-fdx-toolkit[mcp]"     # or: pip install mcp>=1.2,<2
+python -m fadein_mcp.server            # speaks MCP on stdin/stdout
+```
+
+Register it with any MCP client (Hermes, Claude Desktop, …) as a stdio server
+command, e.g. `python -m fadein_mcp.server` with `PYTHONPATH` pointing at this
+repo. `FADEIN_DRAFTS_DIR` sets the folder used when a tool is given a bare
+filename instead of an absolute path.
+
+### Tools
+
+| Tool | What it returns |
+|------|-----------------|
+| `list_scripts` | Screenplay files in a folder, newest first |
+| `script_info` | Page count, scenes, words, characters, locations, revision, hash |
+| `list_scenes` | Scene headings with main characters, word counts, opening lines |
+| `get_scene` | Full text of `"12"`, `"12-15"` or `"12,14,20"` |
+| `search_script` | Matches across headings, action and dialogue, with scene numbers |
+| `character_report` | Per-character scenes and dialogue words, cues normalised |
+| `location_report` | Locations with INT/EXT, time of day and scene numbers |
+| `compare_drafts` | Page/scene/word deltas, scenes added/removed, most-changed scenes |
+| `replace_text` | Surgical find-and-replace, verified, written to a new file |
+| `convert_script` | Convert between `.fadein`, `.fdx`, `.fountain`, `.pdf`, `.txt` |
+
+### Why page count comes from the document
+
+An OSF file states the page count Fade In computed
+(`<info pagecount="101">`). Estimating pages from scenes is wrong — a 101-page
+draft of 202 scenes must not be reported as 25 pages. `script_info` reads the
+attribute.
+
+### Editing without destroying the draft
+
+`replace_text` does not rebuild the document from the parsed model. It edits the
+text runs of matched `<para>` blocks inside `document.xml` and copies every other
+zip entry through untouched, so revision marks, revision colours, styling,
+script notes and embedded assets survive. It then re-parses the result and
+reports scene count, page count and word count before and after.
+
+Safety properties:
+
+- The source file is never overwritten; omit `out_path` and a ` (edited)` copy
+  appears beside it.
+- `dry_run=True` returns the hit count and a preview diff without writing.
+- `scene="44-46"` restricts edits to a scene range.
+- Verification fails loudly rather than silently: a drop in scene count or a
+  changed page count comes back in `checks`.
+
+Limitation: within an edited paragraph the text is flattened into its first run,
+so inline emphasis inside that paragraph is lost. Paragraphs that are not
+matched are byte-identical.
 
 ## Ground-Truth Verification
 
@@ -120,5 +180,6 @@ includes synthetic round-trip tests that run anywhere.
   Scanned PDFs need OCR first — see the `ocr-and-documents` skill.
 - `.fadein` files are ZIP archives wrapping an `document.xml` in Fade In's
   Open Screenplay Format (OSF).
-- Scene numbers travel as trailing `#N#` on scene headings (Fountain and
-  Fade In conventions).
+- Fade In stores scene numbers in the paragraph attribute
+  (`<para number="12">`), not as trailing `#N#` text; the parser reads the
+  attribute. Fountain carries scene numbers as trailing `#12#`.
