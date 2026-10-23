@@ -30,7 +30,9 @@ from fadein_parser import parse_fadein_bytes
 from fdx_parser import ParsedScene
 
 DEFAULT_DRAFTS_DIR = Path(
-    os.environ.get("FADEIN_DRAFTS_DIR", "/opt/data/home/projects/the-waif/drafts")
+    os.environ.get(
+        "FADEIN_DRAFTS_DIR", "/opt/data/home/projects/the-waif/sync-mirror"
+    )
 ).expanduser()
 
 DRAFT_SUFFIXES = (".fadein", ".fdx", ".fountain", ".txt", ".pdf")
